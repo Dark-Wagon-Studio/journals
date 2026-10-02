@@ -44,6 +44,11 @@ target repo. Point the agent at `prompts/journals-init.md`. The prompt is
 the installer. The agent probes the target, asks when the convention may
 already exist, writes the files, and writes the install record.
 
+For a target that already carries the convention, point the agent at
+`prompts/journals-reconcile.md` instead. That prompt upgrades the
+installed layer — skills, contract, git hygiene. It never edits a ledger
+line that exists; a schema bump is the owner's decision, never silent.
+
 ## Design
 
 Three laws govern this repo:

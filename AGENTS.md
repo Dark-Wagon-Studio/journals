@@ -32,5 +32,6 @@ Skills live in `skills/`.
 | Path | Holds |
 | --- | --- |
 | `journals/meta/` | Convention records and install records. |
+| `prompts/` | The installers: journals-init and journals-reconcile. |
 | `skills/` | The published skills: `journal-craft` and `ste-writing`. |
 | `.agents/work/` | Scratch space, gitignored. |

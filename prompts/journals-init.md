@@ -67,7 +67,11 @@ Gather these facts in one pass before writing anything:
 
 Stop and ask before writing anything if:
 
-1. `journals/` exists — a convention may already be installed.
+1. `journals/` exists — a convention may already be installed. When the
+   file carries a `Schema:` ledger line or a `Modifiers:` line, the
+   convention is installed: stop, and point the user at
+   `prompts/journals-reconcile.md` in the journals tree — it is the
+   upgrade path this installer lacks.
 2. An existing `AGENTS.md` or `CLAUDE.md` defines a planning or journaling
    workflow — do not overwrite a convention. Ask whether to proceed with
    the file set above, since this install does not edit those files.
@@ -110,7 +114,9 @@ the adoption date computed below.
 
 When `journals/README.md` already exists and the probe found a `Schema:`
 ledger line or a `Modifiers:` line in it, **do not copy the template over
-it.** Stop. This installer carries no upgrade path. Losing the ledger makes
+it.** Stop. This installer carries no upgrade path;
+`prompts/journals-reconcile.md` in the journals tree is the upgrade path.
+Losing the ledger makes
 the entire existing corpus legacy, so every error-level finding on it
 silently becomes an advisory note and the lint starts exiting 0. Losing the
 `Modifiers:` line invalidates every status line that used a declared
