@@ -7,9 +7,9 @@ dictionary lockdown).
 
 ## Install
 
-Copy the `ste-writing/` folder from this repo into your repo's skills directory.
+Copy the `ste-writing/` folder from this repo into your repo's `.agents/skills/` directory.
 
-Then load `skills/ste-writing/SKILL.md` when you want the style applied.
+Then load `.agents/skills/ste-writing/SKILL.md` when you want the style applied.
 
 ## Files
 

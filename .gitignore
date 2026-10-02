@@ -1,2 +1,8 @@
-.agents/
+# scratch
+.agents/work/
+
+# tool artifacts
+__pycache__/
+
+# subagent output
 **/.pi-subagents/*

@@ -51,7 +51,7 @@ gates.
 
 ## Checking
 
-Run `python3 skills/journal-craft/journal-lint.py` from the repo root before
+Run `python3 .agents/skills/journal-craft/journal-lint.py` from the repo root before
 landing an entry. Fix every error. Notes on legacy entries are information,
 not work.
 

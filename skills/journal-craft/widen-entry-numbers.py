@@ -39,7 +39,7 @@ entry heading still holds the two-digit shape after the rewrites.
 
 Usage (from the repo root):
 
-    python3 skills/journal-craft/widen-entry-numbers.py [--apply]
+    python3 .agents/skills/journal-craft/widen-entry-numbers.py [--apply]
 
 Inputs: the `journals/`, `docs/` trees and the two root Markdown files above.
 Deterministic: two runs on the same tree print identical output. Python 3

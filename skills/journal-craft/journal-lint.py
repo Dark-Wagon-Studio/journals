@@ -10,7 +10,7 @@ Notes never fail the run.
 
 Usage (from the repo root):
 
-    python3 skills/journal-craft/journal-lint.py
+    python3 .agents/skills/journal-craft/journal-lint.py
 
 Inputs: the `journals/` tree and `journals/README.md`. The README carries the
 schema ledger (one `Schema: N. Adopted: <date>.` line per adopted schema,
@@ -137,8 +137,7 @@ NON_ISO_DATE_RE = re.compile(
 # .md. Every citation area is letter-led: ratio tokens in evidence prose
 # ("31/37") are counts, not citations. The lookbehind keeps a filesystem
 # path from reading as a citation; the trailing guards keep a longer path or
-# a non-.md extension from matching (guards reused from orientation-lint
-# REF_RE).
+# a non-.md extension from matching.
 _CITATION_HEAD = r"(?<![\w./-])(?:journals/)?"
 _CITATION_AREA = r"([A-Za-z][A-Za-z0-9_-]*(?:/[A-Za-z0-9][A-Za-z0-9_-]*)?)"
 _CITATION_ENTRY = r"/(\d{3})(?:-([A-Za-z0-9][A-Za-z0-9_-]*))?(?:\.md)?"

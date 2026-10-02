@@ -1,7 +1,7 @@
 # Journal lint rules
 
-Rule definitions for `journal-lint.py`, one section per rule in the fixed
-template from `docs/markdown-conventions.md` §8. The basis names the claim
+Rule definitions for `journal-lint.py`, one section per rule in a fixed
+template. The basis names the claim
 the diagnostic may make: consistency states a mechanically established fact,
 convention states a breach of a content contract, and heuristic offers an
 observed feature as a conditional suggestion. A note never claims more than
@@ -91,13 +91,13 @@ disagrees with the path makes every reference to the entry ambiguous.
 
 ### Example
 
-    # Journal meta/002 — the conventions lint
+    # Journal meta/002 — the schema ledger
 
-as line 1 of `journals/meta/003-conventions-lint.md`.
+as line 1 of `journals/meta/003-schema-ledger.md`.
 
 ### Instead
 
-    # Journal meta/003 — the conventions lint
+    # Journal meta/003 — the schema ledger
 
 ### Exceptions
 

@@ -6,7 +6,7 @@ materialized into the record.
 ## Plan versus journal entry
 
 A **plan** is the working artifact while you collaborate on a piece of work.
-It lives in conversation or in `.agents/` (mid-session scratch). It is not
+It lives in conversation or in `.agents/work/` (mid-session scratch). It is not
 authoritative.
 
 A **journal entry** is a plan committed under `journals/`. It is
@@ -20,10 +20,11 @@ Materializing a plan turns it into a journal entry.
 |---|---|---|
 | `journals/` | Materialized plans — the decision trail | yes |
 | `docs/` | Derived doc artifacts — design specs, reference | yes |
-| `.agents/` | Mid-session scratch — working plans, handoffs, digests | no |
+| `.agents/skills/` | Installed skills | yes |
+| `.agents/work/` | Mid-session scratch — working plans, handoffs, digests | no |
 | `.pi-subagents/` | Subagent output (auto-written) | no |
 
-Put the decision trail in `journals/`. Put scratch in `.agents/`. Do not put
+Put the decision trail in `journals/`. Put scratch in `.agents/work/`. Do not put
 scratch or subagent output in `journals/`.
 
 ## Layout
@@ -133,10 +134,10 @@ the execution log dates the work.
 ## Workflow: plan, then materialize, then execute
 
 1. **Plan.** Collaborate on the work. Produce a plan. The plan lives in
-   conversation or in `.agents/` until you materialize it.
+   conversation or in `.agents/work/` until you materialize it.
 2. **Materialize.** Write the plan to `journals/<area>/<NNN>-<slug>.md` using
    the format below. This is a separate turn from execution. Run the
-   journal-craft lint ("skills/journal-craft/") before landing the entry.
+   journal-craft lint (".agents/skills/journal-craft/") before landing the entry.
    Fix every error it reports.
 3. **Execute.** Carry out the entry against the code only after the user
    instructs execution. Then append the outcome to the same file under
@@ -214,7 +215,7 @@ Name actual files, paths, and contracts in every section.
 
 ## Style
 
-Write entries with the `ste-writing` skill (`skills/ste-writing/`): active
+Write entries with the `ste-writing` skill (`.agents/skills/ste-writing/`): active
 voice, short sentences, one name for one thing. Quoted user speech keeps
 its exact form. If the skill is not installed, apply that rule by hand.
 

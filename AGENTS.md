@@ -6,7 +6,7 @@ Entry point for AI work in this repo. Read this first. The contract is
 ## Planning workflow
 
 Every line of work runs: plan, materialize, execute. Work the problem in
-conversation or in `.agents/` (gitignored scratch), write the plan to
+conversation or in `.agents/work/` (gitignored scratch), write the plan to
 `journals/<area>/<NNN>-<slug>.md` per `journals/README.md`, then — only on
 the user's instruction — execute it and append the outcome to the entry's
 _Execution log_. Do not execute an entry in the session that wrote it,
@@ -20,6 +20,8 @@ and let the user override it, or stop and ask. Do not decide in silence.
 
 ## Skills
 
+Skills live in `skills/`.
+
 | Skill           | Use |
 | --------------- | --- |
 | `journal-craft` | Write and check journal entries against the schema ledger. Mandated when materializing or editing a journal entry. |
@@ -30,3 +32,5 @@ and let the user override it, or stop and ask. Do not decide in silence.
 | Path | Holds |
 | --- | --- |
 | `journals/meta/` | Convention records and install records. |
+| `skills/` | The published skills: `journal-craft` and `ste-writing`. |
+| `.agents/work/` | Scratch space, gitignored. |

@@ -7,17 +7,16 @@ the journals tree.
 
 This prompt installs the journal convention only: the contract, two skills,
 and the git hygiene. It does not install a repo standard — no `AGENTS.md`
-planning sections, no docs contract, no orientation, no conventions lint.
-Those belong to a wider layer, and a separate installer brings them.
+planning sections, no docs contract, no standard-layer skills. Those belong
+to a wider layer, and a separate installer brings them.
 
 The install always writes:
 
 - `journals/README.md` — the planning contract (layout, commits, status
   grammar, workflow, entry format).
-- `skills/journal-craft/` — copied from the journals tree.
-- `skills/ste-writing/` — copied from the journals tree.
-- `.gitignore` coverage for `.agents/` and `**/.pi-subagents/*`, and a
-  `.agents/` scratch directory with `.gitkeep` in it.
+- `.agents/skills/journal-craft/` — copied from the journals tree.
+- `.agents/skills/ste-writing/` — copied from the journals tree.
+- `.gitignore` coverage for `.agents/work/` and `**/.pi-subagents/*`.
 
 Record the install at:
 
@@ -57,10 +56,11 @@ Gather these facts in one pass before writing anything:
   record-area gate drafts its default from it.
 - Do `AGENTS.md` or `CLAUDE.md` exist? Do they reference a planning or
   journaling workflow? (Read-only fact. This install never edits them.)
-- Does `.gitignore` exist? Does it cover `.agents/` and
+- Does `.gitignore` exist? Does it cover `.agents/work/` and
   `**/.pi-subagents/*`?
-- Does `skills/` exist? Do `skills/ste-writing` or `skills/journal-craft`
-  exist?
+- Do `.agents/skills/ste-writing`, `.agents/skills/journal-craft`,
+  `skills/ste-writing`, or `skills/journal-craft` exist? (A root `skills/`
+  directory is the legacy location.)
 - Today's date.
 
 ## Phase 2 — Stop conditions, then state and proceed
@@ -73,8 +73,12 @@ Stop and ask before writing anything if:
    the file set above, since this install does not edit those files.
 3. This is not a git work tree — ask whether to proceed without the git
    hygiene steps.
-4. `skills/ste-writing` or `skills/journal-craft` already exists — ask
-   whether to keep or replace it.
+4. `.agents/skills/ste-writing`, `.agents/skills/journal-craft`,
+   `skills/ste-writing`, or `skills/journal-craft` already exists — ask
+   whether to keep or replace it. When a legacy root `skills/<skill>` path
+   exists and the `.agents/skills/<skill>` path does not, ask whether to
+   migrate the tree to `.agents/skills/` (default: migrate). Never leave
+   both locations in place.
 
 ### Record-area gate
 
@@ -125,23 +129,28 @@ third keeps the ledger ascending, which the lint requires.
 
 ### 3.2 Git hygiene
 
-Make `.gitignore` cover `.agents/` and `**/.pi-subagents/*`. Create
-`.gitignore` if it does not exist. When it exists without the lines, append
-them. Create `.agents/` with an empty `.gitkeep` in it.
+Make `.gitignore` cover `.agents/work/` and `**/.pi-subagents/*`.
+Create `.gitignore` if it does not exist. When it exists without the lines,
+append them. **Replace** any pre-existing blanket `.agents/` ignore line
+with the new lines — do not only append. A leftover blanket line would
+silently gitignore the committed `.agents/skills/`. Create `.agents/skills/`
+for the installed skills. Do not create a `.gitkeep`.
 
 ### 3.3 Install the journal-craft skill
 
 Copy `skills/journal-craft/` from the journals tree into
-`skills/journal-craft/`. Drop any `__pycache__` in the copy. If `skills/`
-already holds other skills, leave them alone. If the skill is missing from
-the journals tree, report it and continue.
+`.agents/skills/journal-craft/`. Create `.agents/skills/` first. Drop any
+`__pycache__` in the copy. If `.agents/skills/` already holds other skills,
+leave them alone. If the skill is missing from the journals tree, report it
+and continue.
 
 ### 3.4 Install the ste-writing skill
 
 Copy `skills/ste-writing/` from the journals tree into
-`skills/ste-writing/`. If `skills/` already holds other skills, leave them
-alone. If the skill is missing from the journals tree, report it and
-continue — the contract's _Style_ section already carries the by-hand rule.
+`.agents/skills/ste-writing/`. Create `.agents/skills/` first. If
+`.agents/skills/` already holds other skills, leave them alone. If the
+skill is missing from the journals tree, report it and continue — the
+contract's _Style_ section already carries the by-hand rule.
 
 ## Phase 4 — Record
 
@@ -164,11 +173,12 @@ chosen when it is not today.
 Check, then report:
 
 - `journals/README.md` exists and carries the two-tier status grammar.
-- `.gitignore` covers both patterns. `.agents/.gitkeep` exists.
-- `skills/journal-craft/SKILL.md` exists, with `journal-lint.py`.
-- `skills/ste-writing/SKILL.md` exists.
+- `.gitignore` covers `.agents/work/` and `**/.pi-subagents/*`, and has no
+  leftover blanket `.agents/` line.
+- `.agents/skills/journal-craft/SKILL.md` exists, with `journal-lint.py`.
+- `.agents/skills/ste-writing/SKILL.md` exists.
 - The install record exists at the chosen path with `Status: Executed.` and
   a `Schema:` line that matches the contract's ledger.
-- `python3 skills/journal-craft/journal-lint.py` exits with 0 errors.
+- `python3 .agents/skills/journal-craft/journal-lint.py` exits with 0 errors.
 
 Do not commit. The install stays in the working tree. The user commits.

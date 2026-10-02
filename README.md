@@ -31,10 +31,11 @@ not tools. A stranger can install it and owe Dark Wagon Studio nothing.
 | Target in your repo | Holds |
 | --- | --- |
 | `journals/README.md` | The planning contract: layout, commits, status grammar, workflow, entry format, schema ledger. |
-| `skills/journal-craft/` | The journal entry skill, with `journal-lint.py`. |
-| `skills/ste-writing/` | The writing style skill, with its lint. |
-| `.gitignore` lines | Coverage for `.agents/` and `**/.pi-subagents/*`. |
-| `.agents/` | Scratch space, gitignored, with `.gitkeep` in it. |
+| `.agents/skills/journal-craft/` | The journal entry skill, with `journal-lint.py`. |
+| `.agents/skills/ste-writing/` | The writing style skill, with its lint. |
+| `.agents/skills/` | Installed skills. Committed. |
+| `.gitignore` lines | Coverage for `.agents/work/` and `**/.pi-subagents/*`. |
+| `.agents/work/` | Scratch space, gitignored. |
 
 ## Install
 

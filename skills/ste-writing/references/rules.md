@@ -1,7 +1,7 @@
 # ste-lint categories
 
-Rule definitions for `ste-lint.py`, one section per counted category in the
-fixed template from `docs/markdown-conventions.md` §8. The basis names the
+Rule definitions for `ste-lint.py`, one section per counted category in a
+fixed template. The basis names the
 claim the diagnostic may make: consistency states a mechanically
 established fact, convention states a breach of a content contract, and
 heuristic offers an observed feature as a conditional suggestion. A note
