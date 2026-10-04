@@ -1,6 +1,6 @@
 # Journal meta/003 — adopt MIT and state it in the README
 
-Status: Decided.
+Status: Executed.
 Date: 2026-10-04. Depends on: meta/000.
 Schema: 5.
 
