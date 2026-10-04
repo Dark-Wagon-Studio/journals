@@ -67,6 +67,10 @@ One exception. The journal entry schema carries an integer. The schema
 ledger in `journals/README.md` only ever grows. The lint keeps checking
 older schemas, and it reports when it meets a newer one.
 
+## License
+
+MIT. See [LICENSE](./LICENSE).
+
 ## Provenance
 
 This repo succeeds the retired `baseline` repository, which succeeded the
