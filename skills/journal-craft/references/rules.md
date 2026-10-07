@@ -9,8 +9,9 @@ its basis supports.
 
 The lint reads the `journals/` tree and `journals/README.md`. It reports
 claims that do not resolve. It never writes, scores, ranks, or gates.
-Findings print one per line as `<path>:<line> <class> <code> <message>`,
-then a summary line. Errors exit 1, the schema notice exits 2, notes exit 0.
+Error findings print one per line as
+`<path>:<line> <class> <code> <message>` by default; note findings print
+only with `--notes`. Errors exit 1, the schema notice exits 2, notes exit 0.
 Every finding on a legacy entry is a note. An entry resolves to a schema in
 three steps. Step one: its own `Schema:` line, when it carries one. Step
 two: the ledger line with the latest adoption date on or before the entry

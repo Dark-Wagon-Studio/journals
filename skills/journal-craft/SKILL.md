@@ -52,8 +52,9 @@ gates.
 ## Checking
 
 Run `python3 .agents/skills/journal-craft/journal-lint.py` from the repo root before
-landing an entry. Fix every error. Notes on legacy entries are information,
-not work.
+landing an entry. The report prints error lines and a summary line carrying
+both counts; `--notes` lists the note lines. Fix every error. Notes on legacy
+entries are information, not work.
 
 ## Schema resolution
 

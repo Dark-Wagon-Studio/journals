@@ -2,15 +2,17 @@
 """journal-lint.py — advisory lint for journal entries under schema 5.
 
 Linter law: this tool reports claims that do not resolve. It never writes
-files, generates content, scores, ranks, or gates. Findings print one per
-line as `<path>:<line> <class> <code> <message>`, then a summary line.
+files, generates content, scores, ranks, or gates. Error findings print
+one per line as `<path>:<line> <class> <code> <message>` by default; note
+findings print only when `--notes` is passed. Either way the run closes
+with a summary line carrying both counts.
 
 Exit codes: 1 when errors exist, 2 on a schema-version notice, 0 otherwise.
 Notes never fail the run.
 
 Usage (from the repo root):
 
-    python3 .agents/skills/journal-craft/journal-lint.py
+    python3 .agents/skills/journal-craft/journal-lint.py [--notes]
 
 Inputs: the `journals/` tree and `journals/README.md`. The README carries the
 schema ledger (one `Schema: N. Adopted: <date>.` line per adopted schema,
@@ -912,6 +914,7 @@ def lint_repo(root):
 
 
 def main():
+    show_notes = "--notes" in sys.argv[1:]
     findings, ledger, notice, _entry_index, _decision_index = \
         lint_repo(Path.cwd())
     if notice is not None:
@@ -919,6 +922,8 @@ def main():
         return 2
     findings.sort(key=lambda f: (f["path"], f["line"], f["code"], f["msg"]))
     for f in findings:
+        if f["cls"] == "note" and not show_notes:
+            continue
         print(f'{f["path"]}:{f["line"]} {f["cls"]:<5} {f["code"]} {f["msg"]}')
     errors = sum(1 for f in findings if f["cls"] == "error")
     notes = sum(1 for f in findings if f["cls"] == "note")
