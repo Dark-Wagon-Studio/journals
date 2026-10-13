@@ -52,6 +52,17 @@ D3". Never cite a bare decision ID. The entry qualifies it. A citation that
 carries a slug resolves to the entry with that slug. A citation with no slug
 resolves only when the number names one entry in the directory.
 
+Cite a ruling as "<area>/<NNN> R<k>", for example "gameplay/002 R1". The
+item's own letter names its namespace: an item written `**D4 —` under a
+Rulings section is cited as D4.
+
+An external citation `ext:<source>/<area>/<NNN>` is provenance, never
+authorization. It records where the cited item came from. A commit's
+authorizing entry is local to the repo that commits. When another repo's
+record supersedes a decision this repo's work rests on, the dependent work
+re-decides locally before it executes. A foreign supersession never flips a
+local status line.
+
 A project extends the citation set by declaring it. Add one line to
 this README, directly under the citation rule above:
 
@@ -114,8 +125,11 @@ Modifiers — optional, comma-separated. The base set is:
 
 - **Provisional** — not yet firm. May be revised or withdrawn.
 - **On hold** — parked. No work until it moves.
-- **Superseded by `<area>/<NNN>`** — replaced by a later entry. Keep the
-  entry. It is still the record of what was once decided.
+- **Superseded by `<area>/<NNN>`** — replaced by a later entry. The target
+  may name one item — `Superseded by <area>/<NNN> D<k>`, or `R<k>` for a
+  ruling — when one item is replaced, not the whole entry. The superseding
+  entry need not be Executed: a record-only entry that exists to supersede
+  is legal. Keep the entry. It is still the record of what was once decided.
 
 Examples: `Status: Materialized.` · `Status: Decided, Superseded by
 infra/002.` · `Status: Executed.`
@@ -169,6 +183,7 @@ An entry follows this shape:
     ## Current state (evidence, verified <date>)
     ## Gap inventory
     ## Decisions
+    ## Rulings
     ## Execution phases
     ## Verification
     ## Files this entry will touch
@@ -192,6 +207,11 @@ Notes:
   section when there is none. When present, number every item:
   "1. **D1 — short name.** The decision sentence." Numbers run from 1
   inside the entry.
+- **Rulings** — in-session rulings made during execution: the user's live
+  calls with receipts, conductor picks logged with cost, verdicts elevated
+  to record. Optional; an entry carries Decisions or Rulings or both. Number
+  every item "1. **R1 — short name.** The ruling sentence." Numbers run from
+  1 inside the section. Receipts follow the Ruling-receipts rule below.
 - **Execution phases** — ordered. Mark dependencies between them.
 - **Verification** — the definition of done.
 - **Execution log** — append to the same file once the work is done. Do not
@@ -224,7 +244,7 @@ its exact form. If the skill is not installed, apply that rule by hand.
 This contract carries a schema version. The ledger below states every schema
 this repo has adopted.
 
-Schema: 5. Adopted: <YYYY-MM-DD>.
+Schema: 6. Adopted: <YYYY-MM-DD>.
 
 The installer fills the adoption date. The ledger is append-only. A bump
 appends one line directly under the last `Schema:` line. A bump never edits a

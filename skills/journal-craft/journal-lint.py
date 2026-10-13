@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""journal-lint.py — advisory lint for journal entries under schema 5.
+"""journal-lint.py — advisory lint for journal entries under schema 6.
 
 Linter law: this tool reports claims that do not resolve. It never writes
 files, generates content, scores, ranks, or gates. Error findings print
@@ -37,12 +37,14 @@ Checks:
   J02  heading parses as "# Journal <area>/<NNN> — <description>" and the
        <area>/<NNN> matches the file's directory and filename number
   J03  status line is the second non-empty line; primary from the closed
-       set; modifiers base or declared; supersession targets resolve
+       set; modifiers base or declared; supersession targets resolve,
+       entry-level or decision-qualified ("<area>/<NNN> D<k>" / "R<k>")
   J04  date/depends line present and parseable; date is ISO 8601; every
        dependency resolves to an entry; "none" is legal
-  J05  every "## Decisions" item matches "N. **DN — name.**", sequential
-       from 1; bulleted or bold-led items without that numbering are
-       unnumbered decision prose (note on legacy entries)
+  J05  every item under "## Decisions" or "## Rulings" matches
+       "N. **DN — name.**" or "N. **RN — name.**", sequential from 1
+       inside its section; bulleted or bold-led items without that
+       numbering are unnumbered prose (note on legacy entries)
   J06  entry path nests at most one line level under an area (two or
        three path components under journals/)
   J07  dates are ISO 8601 everywhere they appear (the Date line itself is
@@ -57,30 +59,37 @@ Checks:
        is present on every entry that resolves to schema 2 or higher. A
        declaration above SCHEMA_MAX is a note and skips the entry
   J10  citations in the entry body resolve: "<area>/<NNN>" (optional
-       "journals/" prefix, "-slug", ".md") resolves to an entry and
-       "<area>/<NNN> D<k>" to a decision in it; "§<k>" resolves the entry
-       only, because sections are named, not numbered. Every citation area
-       is letter-led: ratio tokens in evidence prose ("31/37") are counts,
-       not citations. Quote lines, inline code spans, and decision
-       definitions inside the Decisions section are exempt, and a declared
+       "journals/" prefix, "-slug", ".md") resolves to an entry,
+       "<area>/<NNN> D<k>" to a decision in it, and "<area>/<NNN> R<k>"
+       to a ruling in it; "§<k>" resolves the entry only, because sections
+       are named, not numbered. Every citation area is letter-led: ratio
+       tokens in evidence prose ("31/37") are counts, not citations. Quote
+       lines, inline code spans, and decision or ruling definitions inside
+       the Decisions and Rulings sections are exempt, and a declared
        "Citations:" shape is recognized but never resolved. An external
        citation "ext:<source>/<area>/<NNN>" (with the same decorations) is
        recognized, claimed ahead of the local grammar, and never resolved.
        A bare "D<k>"
        is a note unless the containing entry defines that decision, and
-       reports nothing below schema 4. A miss is an error on schema 4 or
-       higher, a note below schema 4. A relative filesystem path that ends
-       like an entry citation ("dir/NNN-slug.md") still matches; no such
-       token exists outside "journals/" today.
+       reports nothing below schema 4; a bare "R<k>" is unchecked. A miss
+       is an error on schema 4 or higher, a note below schema 4. A relative
+       filesystem path that ends like an entry citation
+       ("dir/NNN-slug.md") still matches; no such token exists outside
+       "journals/" today.
 
 The citation grammar is importable: CITATION_ENTRY_RE, CITATION_DECISION_RE,
-CITATION_SECTION_RE, BARE_DECISION_RE, CITATIONS_LINE_RE, and
-EXT_CITATION_RE, the (entry, decision) indexes from build_indexes(), and
-shape_to_regex() for a declared shape. An entry match captures (area, NNN,
-slug); entry_key() reads the three from any citation or area match, and a
-decision citation's D<k> is group 4. A downstream indexer imports the
-grammar instead of re-deriving it. EXT_CITATION_RE recognizes the external
-"ext:" form: it claims the span and resolves nothing.
+CITATION_SECTION_RE, BARE_DECISION_RE, CITATIONS_LINE_RE, EXT_CITATION_RE,
+the R mirrors (RULINGS_HEADING_RE, RULING_ITEM_RE, RULING_CITATION_RE),
+SUPERSEDED_DECISION_RE, the (entry, decision) indexes from build_indexes(),
+the rulings index from build_rulings_index(), and shape_to_regex() for a
+declared shape. An entry match captures (area, NNN, slug); entry_key() reads
+the three from any citation or area match, and a decision or ruling
+citation's <k> is group 4 in both citation regexes. The D regexes
+(DECISIONS_HEADING_RE, DECISION_ITEM_RE, CITATION_DECISION_RE, AREA_REF_RE,
+SUPERSEDED_RE, BARE_DECISION_RE) keep their exact bytes: schema 6 adds
+mirrors beside them, never edits. A downstream indexer imports the grammar
+instead of re-deriving it. EXT_CITATION_RE recognizes the external "ext:"
+form: it claims the span and resolves nothing.
 
 Deterministic: two runs on the same tree print identical output. Python 3
 standard library only; no network.
@@ -91,7 +100,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-SCHEMA_MAX = 5
+SCHEMA_MAX = 6
 
 PRIMARY_STATES = ("Materialized", "Decided", "Executed")
 BASE_MODIFIERS = ("Provisional", "On hold")
@@ -105,6 +114,13 @@ SUPERSEDED_RE = re.compile(r"^Superseded by (.+)$")
 # valid.
 AREA_REF_RE = re.compile(
     r"^(.+)/(\d{3})(?:-([A-Za-z0-9][A-Za-z0-9_-]*))?$")
+# A supersession target that names one item: the area reference plus an
+# optional " D<k>" or " R<k>" tail. Dedicated to the status modifier, so
+# J04's "Depends on:" never parses through it: a decision-qualified
+# dependency stays a parse error. The letter names the index the tail
+# resolves against.
+SUPERSEDED_DECISION_RE = re.compile(
+    r"^(.+)/(\d{3})(?:-([A-Za-z0-9][A-Za-z0-9_-]*))?(?:\s+([DR])(\d+))?$")
 DATE_PREFIX_RE = re.compile(r"^Date:")
 DATE_LINE_RE = re.compile(
     r"^Date:\s*(\d{4}-\d{2}-\d{2})\s*\.\s*Depends on:\s*(.*?)\s*\.\s*$")
@@ -117,11 +133,19 @@ ENTRY_SCHEMA_RE = re.compile(r"^Schema:\s*(\d+)\s*\.\s*$")
 MODIFIERS_LINE_RE = re.compile(r"^Modifiers:\s*(.*?)\s*\.?\s*$")
 SECTION_HEADING_RE = re.compile(r"^## ")
 DECISIONS_HEADING_RE = re.compile(r"^## Decisions\s*$")
+# The sanctioned home for R-numbered items. The heading names the section;
+# the item's own label letter decides its namespace, so a D-labeled item
+# under this heading stays a D-item.
+RULINGS_HEADING_RE = re.compile(r"^## Rulings\s*$")
 NUMBERED_ITEM_RE = re.compile(r"^\s*(\d+)[.)]\s+")
 DECISION_ITEM_RE = re.compile(r"^(\d+)[.)]\s+\*\*D(\d+)\s+—\s+\S")
+# The R mirror of DECISION_ITEM_RE: same shape, same groups, the other
+# letter.
+RULING_ITEM_RE = re.compile(r"^(\d+)[.)]\s+\*\*R(\d+)\s+—\s+\S")
 # A line that starts a bold-led item (optionally bulleted) attempts to be a
-# decision item; without the "N. " number it is unnumbered decision prose.
-# Mid-line "**D<k>" mentions (inline code, citations) are not item starts.
+# decision or ruling item; without the "N. " number it is unnumbered section
+# prose. Mid-line "**D<k>"/"**R<k>" mentions (inline code, citations) are
+# not item starts.
 UNNUMBERED_ITEM_RE = re.compile(r"^(?:[-*+]\s+)?\*\*")
 ISO_TOKEN_RE = re.compile(r"(?<!\d)(\d{4}-\d{2}-\d{2})(?!\d)")
 # Dotted dates read day.month.year; the day and month bounds keep
@@ -132,7 +156,8 @@ NON_ISO_DATE_RE = re.compile(
     r"|(?:0?[1-9]|[12]\d|3[01])\.(?:0?[1-9]|1[0-2])\.\d{4}"
     r"|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.? \d{1,2},? \d{4})\b")
 
-# Citation grammar (schema 4; width three since schema 5). Importable: a
+# Citation grammar (schema 4; width three since schema 5; the R mirrors
+# since schema 6). Importable: a
 # downstream indexer imports the
 # grammar instead of re-deriving it. An entry citation is an optional
 # journals/ prefix, one or two area segments, /<NNN>, an optional -slug and
@@ -152,6 +177,12 @@ CITATION_ENTRY_RE = re.compile(
 # decision group to 4: (area, NNN, slug, k).
 CITATION_DECISION_RE = re.compile(
     _CITATION_HEAD + _CITATION_AREA + _CITATION_ENTRY + r"\s+D(\d+)"
+    + _CITATION_TAIL)
+# The R mirror of CITATION_DECISION_RE: same shape, same group layout, the
+# other letter. A D citation and an R citation never overlap: the letter
+# differs.
+RULING_CITATION_RE = re.compile(
+    _CITATION_HEAD + _CITATION_AREA + _CITATION_ENTRY + r"\s+R(\d+)"
     + _CITATION_TAIL)
 # A section citation resolves to the entry only: <k> is never validated,
 # because sections are named, not numbered. The entry's slug capture
@@ -348,6 +379,47 @@ def front_matter_end(lines):
     return len(lines)
 
 
+def section_spans(lines):
+    """Yield (start, end) index pairs, one per Decisions/Rulings span.
+
+    A span starts at a "## Decisions" or "## Rulings" heading and ends
+    before the next "## " heading, or at the end of the file. The heading
+    names the span; the item's own label letter decides its namespace.
+    """
+    i = 0
+    while i < len(lines):
+        if DECISIONS_HEADING_RE.match(lines[i]) \
+                or RULINGS_HEADING_RE.match(lines[i]):
+            j = i + 1
+            while j < len(lines) and not SECTION_HEADING_RE.match(lines[j]):
+                j += 1
+            yield i, j
+            i = j
+        else:
+            i += 1
+
+
+def section_items(lines):
+    """Yield ("D", match) or ("R", match) per numbered item in a span.
+
+    Dispatch reads the item's own label letter: DECISION_ITEM_RE first, then
+    RULING_ITEM_RE. A numbered line the two regexes both reject is not an
+    item here; J05 reports it.
+    """
+    for start, end in section_spans(lines):
+        for line in lines[start + 1:end]:
+            if not NUMBERED_ITEM_RE.match(line):
+                continue
+            s = line.strip()
+            m = DECISION_ITEM_RE.match(s)
+            if m:
+                yield "D", m
+                continue
+            m = RULING_ITEM_RE.match(s)
+            if m:
+                yield "R", m
+
+
 def read_entry_schema(lines):
     """Read an entry's "Schema: <N>." declaration from its front matter.
 
@@ -406,7 +478,8 @@ def collect_citations(line, in_code_span, declared_res):
     multi-line span. Returns (start, end, kind, m) tuples with offsets into
     the line. One citation resolves once: a match overlapping an already
     claimed span is dropped. External citations claim first, then declared
-    shapes, then decision, section, entry, and bare decision citations.
+    shapes, then decision, ruling, section, entry, and bare decision
+    citations.
     """
     matches = []
     claimed = []
@@ -426,6 +499,7 @@ def collect_citations(line, in_code_span, declared_res):
             for regex in declared_res:
                 take(part, pos, regex, "declared")
             take(part, pos, CITATION_DECISION_RE, "decision")
+            take(part, pos, RULING_CITATION_RE, "ruling")
             take(part, pos, CITATION_SECTION_RE, "section")
             take(part, pos, CITATION_ENTRY_RE, "entry")
             take(part, pos, BARE_DECISION_RE, "bare")
@@ -458,7 +532,7 @@ def resolve_entry(key, entry_index):
 
 
 def lint_entry(p, rel, ledger, declared, declared_shapes, entry_index,
-               decision_index):
+               decision_index, rulings_index):
     """Lint one entry file. Returns (findings, legacy, skipped).
 
     "skipped" is True when the entry declares a schema above SCHEMA_MAX. The
@@ -636,41 +710,64 @@ def lint_entry(p, rel, ledger, declared, declared_shapes, entry_index,
                         add("J03", status_lineno, f"unknown status modifier: {it}")
                         continue
                     ref = um.group(1).strip()
-                    am = AREA_REF_RE.match(ref)
-                    if not am:
-                        add("J03", status_lineno,
-                            f'supersession target does not parse as '
-                            f'"<area>/<NNN>": {ref}')
-                    else:
-                        ep, reason = resolve_entry(entry_key(am), entry_index)
+                    # A decision-qualified target ("<area>/<NNN> D<k>" or
+                    # "R<k>") parses through its own grammar; without the
+                    # tail the entry-level AREA_REF_RE path is unchanged.
+                    tm = SUPERSEDED_DECISION_RE.match(ref)
+                    if tm and tm.group(4) is not None:
+                        ep, reason = resolve_entry(entry_key(tm), entry_index)
                         if reason == "ambiguous":
-                            n = len(entry_index[(am.group(1), am.group(2))])
+                            n = len(entry_index[(tm.group(1), tm.group(2))])
                             add("J03", status_lineno,
                                 f"supersession target is ambiguous: {ref} "
                                 f"names {n} entries")
                         elif ep is None:
                             add("J03", status_lineno,
                                 f"supersession target does not resolve: {ref}")
+                        else:
+                            letter, k = tm.group(4), int(tm.group(5))
+                            index = (decision_index if letter == "D"
+                                     else rulings_index)
+                            if ep not in index.get(
+                                    (tm.group(1), tm.group(2), k), set()):
+                                add("J03", status_lineno,
+                                    f"supersession target does not resolve: "
+                                    f"{ref}")
+                    else:
+                        am = AREA_REF_RE.match(ref)
+                        if not am:
+                            add("J03", status_lineno,
+                                f'supersession target does not parse as '
+                                f'"<area>/<NNN>": {ref}')
+                        else:
+                            ep, reason = resolve_entry(
+                                entry_key(am), entry_index)
+                            if reason == "ambiguous":
+                                key = (am.group(1), am.group(2))
+                                n = len(entry_index[key])
+                                add("J03", status_lineno,
+                                    f"supersession target is ambiguous: {ref} "
+                                    f"names {n} entries")
+                            elif ep is None:
+                                add("J03", status_lineno,
+                                    f"supersession target does not resolve: "
+                                    f"{ref}")
 
-    # J05 — Decisions numbering. The section's span (dec_start..dec_end) is
-    # shared with J10 below, so both checks mean the same lines by
-    # "## Decisions".
-    dec_start = None
-    for i, line in enumerate(lines):
-        if DECISIONS_HEADING_RE.match(line):
-            dec_start = i
-            break
-    dec_end = None
-    if dec_start is not None:
-        section = []
-        j = dec_start + 1
-        while j < len(lines) and not SECTION_HEADING_RE.match(lines[j]):
-            section.append((j + 1, lines[j]))
-            j += 1
-        dec_end = j
+    # J05 — Decisions and Rulings numbering. The spans are shared with J10
+    # below, so both checks mean the same lines by "## Decisions" and
+    # "## Rulings". Each span numbers its items from 1 on its own. The
+    # matched item's label letter picks the numbering message; the span's
+    # heading names the unnumbered ones.
+    spans = list(section_spans(lines))
+    for span_start, span_end in spans:
+        if RULINGS_HEADING_RE.match(lines[span_start]):
+            span_noun = "ruling"
+        else:
+            span_noun = "decision"
         seq = 0
         unnumbered = []
-        for lineno, line in section:
+        for j in range(span_start + 1, span_end):
+            lineno, line = j + 1, lines[j]
             s = line.strip()
             if not s:
                 continue
@@ -678,25 +775,30 @@ def lint_entry(p, rel, ledger, declared, declared_shapes, entry_index,
             if nm:
                 seq += 1
                 dm2 = DECISION_ITEM_RE.match(s)
+                noun, letter = "decision", "D"
+                if dm2 is None:
+                    dm2 = RULING_ITEM_RE.match(s)
+                    noun, letter = "ruling", "R"
                 if not dm2:
                     add("J05", lineno, 'decision item does not match '
                                        '"N. **DN — name.**": '
                                        f"{excerpt(line)}")
                 elif int(dm2.group(1)) != seq:
-                    add("J05", lineno, f"decision numbering out of sequence: "
+                    add("J05", lineno, f"{noun} numbering out of sequence: "
                                        f"expected {seq}, found {dm2.group(1)}")
                 elif int(dm2.group(2)) != seq:
-                    add("J05", lineno, f"decision number D{dm2.group(2)} does "
-                                       f"not match item position {seq}")
+                    add("J05", lineno, f"{noun} number {letter}{dm2.group(2)} "
+                                       f"does not match item position {seq}")
             elif UNNUMBERED_ITEM_RE.match(s):
                 unnumbered.append((lineno, s))
         if unnumbered:
             if legacy:
                 add("J05", unnumbered[0][0],
-                    "legacy entry: decisions unnumbered", cls="note")
+                    f"legacy entry: {span_noun}s unnumbered", cls="note")
             else:
                 for lineno, s in unnumbered:
-                    add("J05", lineno, f"decision item is unnumbered: {excerpt(s)}")
+                    add("J05", lineno,
+                        f"{span_noun} item is unnumbered: {excerpt(s)}")
 
     # J07 — dates are ISO 8601 everywhere they appear. The Date line is
     # J04's; J07 skips it to avoid double-reporting. Quote lines are exempt:
@@ -717,14 +819,14 @@ def lint_entry(p, rel, ledger, declared, declared_shapes, entry_index,
 
     # J10 — inline citation resolution. Scans the body only: the front matter
     # holds the Status and Depends on lines, J03/J04 territory. Quote lines
-    # are exempt (verbatim session speech may cite anything) and decision
-    # definitions are J05's, exempt only inside the Decisions section. The
-    # code-span state carries across scanned lines and hides grammar
-    # illustrations that cite entries of other repos. A declared shape and
-    # an external "ext:" citation are recognized and never resolved; a bare
-    # D<k> is exempt when this entry defines it. The class is computed
-    # here: on schema 4 or higher a miss
-    # is an error and a bare ID a note; below it a miss is a note and a
+    # are exempt (verbatim session speech may cite anything) and decision or
+    # ruling definitions are J05's, exempt only inside the Decisions and
+    # Rulings sections. The code-span state carries across scanned lines and
+    # hides grammar illustrations that cite entries of other repos. A
+    # declared shape and an external "ext:" citation are recognized and never
+    # resolved; a bare D<k> is exempt when this entry defines it, and a bare
+    # R<k> is unchecked. The class is computed here: on schema 4 or higher a
+    # miss is an error and a bare ID a note; below it a miss is a note and a
     # bare ID reports nothing.
     gate = effective is not None and effective >= 4
     miss_cls = "error" if gate else "note"
@@ -740,10 +842,11 @@ def lint_entry(p, rel, ledger, declared, declared_shapes, entry_index,
     in_code_span = False
     body_start = front_matter_end(lines)
     for i, line in enumerate(lines):
-        in_decisions = dec_start is not None and dec_start < i < dec_end
+        in_section = any(s < i < e for s, e in spans)
         if i >= body_start and not line.lstrip().startswith(">") \
-                and not (in_decisions
-                         and DECISION_ITEM_RE.match(line.strip())):
+                and not (in_section
+                         and (DECISION_ITEM_RE.match(line.strip())
+                              or RULING_ITEM_RE.match(line.strip()))):
             for _s, _e, kind, m in collect_citations(
                     line, in_code_span, declared_res):
                 if kind in ("declared", "external"):
@@ -771,6 +874,12 @@ def lint_entry(p, rel, ledger, declared, declared_shapes, entry_index,
                             (area, nn, int(m.group(4))), set()):
                     add("J10", i + 1,
                         f"decision citation does not resolve: "
+                        f"{m.group(0)}", cls=miss_cls)
+                elif kind == "ruling" \
+                        and ep not in rulings_index.get(
+                            (area, nn, int(m.group(4))), set()):
+                    add("J10", i + 1,
+                        f"ruling citation does not resolve: "
                         f"{m.group(0)}", cls=miss_cls)
             if line.count("`") % 2:
                 in_code_span = not in_code_span
@@ -855,9 +964,10 @@ def build_indexes(journals):
     number both land, and the resolvers judge. area_dir is the entry's
     directory under journals/ as a /-joined string. decision_index maps
     (area_dir, NN, k) to the set of entry Paths that define it, walked
-    exactly as J05 walks the "## Decisions"
-    section. The index records, it does not judge: numbering findings stay
-    J05's.
+    exactly as J05 walks the "## Decisions" and "## Rulings"
+    sections. The item's label letter decides the namespace, never the
+    heading: a D-labeled item under "## Rulings" indexes here. The index
+    records, it does not judge: numbering findings stay J05's.
     """
     entry_index = {}
     decision_index = {}
@@ -872,22 +982,37 @@ def build_indexes(journals):
             lines = p.read_text(encoding="utf-8").splitlines()
         except (OSError, UnicodeDecodeError):
             continue
-        dec_start = None
-        for i, line in enumerate(lines):
-            if DECISIONS_HEADING_RE.match(line):
-                dec_start = i
-                break
-        if dec_start is None:
-            continue
-        j = dec_start + 1
-        while j < len(lines) and not SECTION_HEADING_RE.match(lines[j]):
-            if NUMBERED_ITEM_RE.match(lines[j]):
-                dm = DECISION_ITEM_RE.match(lines[j].strip())
-                if dm:
-                    decision_index.setdefault(
-                        (area_dir, nn, int(dm.group(2))), set()).add(p)
-            j += 1
+        for letter, m in section_items(lines):
+            if letter == "D":
+                decision_index.setdefault(
+                    (area_dir, nn, int(m.group(2))), set()).add(p)
     return entry_index, decision_index
+
+
+def build_rulings_index(journals):
+    """Build the rulings index for the journals tree.
+
+    Returns rulings_index: the same key shape as decision_index,
+    (area_dir, NN, k), mapped to the set of entry Paths that define the
+    ruling. The walk is the one build_indexes runs; only the label letter
+    differs. A ruling the index does not hold is the J10 miss.
+    """
+    rulings_index = {}
+    for p, rel in discover_entries(journals):
+        fm = ENTRY_FILENAME_RE.match(p.name)
+        if not fm:
+            continue
+        area_dir = "/".join(rel.parts[:-1])
+        nn = fm.group(1)
+        try:
+            lines = p.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeDecodeError):
+            continue
+        for letter, m in section_items(lines):
+            if letter == "R":
+                rulings_index.setdefault(
+                    (area_dir, nn, int(m.group(2))), set()).add(p)
+    return rulings_index
 
 
 def lint_repo(root):
@@ -898,13 +1023,14 @@ def lint_repo(root):
         return readme_findings, ledger, notice, {}, {}
     entries = discover_entries(journals)
     entry_index, decision_index = build_indexes(journals)
+    rulings_index = build_rulings_index(journals)
     findings = list(readme_findings)
     legacy_by_path = {}
     skipped_paths = set()
     for p, rel in entries:
         entry_findings, legacy, skipped = lint_entry(
             p, rel, ledger, declared, declared_shapes,
-            entry_index, decision_index)
+            entry_index, decision_index, rulings_index)
         legacy_by_path[p.as_posix()] = legacy
         if skipped:
             skipped_paths.add(p.as_posix())

@@ -127,36 +127,52 @@ supersession target whose bare number names more than one entry in its
 directory is ambiguous and reports; the target may carry `-<slug>` to name
 one of them. A primary state in a later position reports.
 
+A supersession target may name one item of the entry:
+`Superseded by <area>/<NNN> D<k>`, or `R<k>` for a ruling. The entry and
+the item must both exist. `D<k>` resolves against the decisions the entry
+defines; `R<k>` resolves against its rulings. The tail is the status
+modifier's own grammar: a decision-qualified `Depends on:` target stays a
+parse error.
+
 ### Basis
 
 Convention. The diagnostic claims a breach of the status grammar. The
-supersession finding states a fact: the target is absent from the entry
-index.
+supersession finding states a fact: the target — the entry, or the item the
+letter names — is absent from its index.
 
 ### Why it matters
 
 The status line is what the authority procedure reads first. An unknown
-state or an unresolvable supersession target sends the reader to nothing.
+state or an unresolvable supersession target sends the reader to nothing. A
+decision-level target says which part of the entry was replaced, so the
+reader keeps the rest.
 
 ### Example
 
     Status: Executed, Approved.
 
+    Status: Decided, Superseded by meta/004 D9.
+
 ### Instead
 
     Status: Executed.
+
+    Status: Decided, Superseded by meta/004 D2.
 
 ### Exceptions
 
 An entry with fewer than two non-empty lines reports one missing-status
 finding. An empty item between commas reports as a parse failure. The
 supersession target must parse as `<area>/<NNN>`, with an optional
-`-<slug>`; anything else reports as an unknown modifier.
+`-<slug>` and an optional ` D<k>` or ` R<k>` tail; anything else reports as
+an unknown modifier. A decision-qualified target resolves in two steps: the
+entry first, then the item the letter names. An item the entry does not
+define reports the same finding as a missing entry.
 
 ### Inputs
 
 The entry lines, the declared modifiers from `journals/README.md`, and the
-entry index built from the `journals/` tree.
+entry, decision, and ruling indexes built from the `journals/` tree.
 
 ### Configuration
 
@@ -209,45 +225,57 @@ parsed date decides legacy status and schema resolution for the entry.
 
 None.
 
-## J05 — decision numbering
+## J05 — decision and ruling numbering
 
 ### What it checks
 
-In the `## Decisions` section, every numbered item opens with
-`N. **D<N> — <name>`. The check reads the head through the first
+In the `## Decisions` and `## Rulings` sections, every numbered item opens
+with `N. **D<N> — <name>` or `N. **R<N> — <name>`. The check reads the head
+through the first
 non-space of the name, so an unclosed bold phrase or a missing final
 period does not report. Item numbers run from 1
-with no skips, and item `N` defines decision `D<N>`. A line that opens a
+inside each section, with no skips, and item `N` defines decision `D<N>` or
+ruling `R<N>`. The item's own label letter names its namespace, wherever
+the item sits: an item written `**D4 —` under `## Rulings` is a decision,
+and one written `**R4 —` under `## Decisions` is a ruling. The heading is
+the sanctioned home for new ruling items, never an override. A line that
+opens a
 bold phrase, with or without a bullet, but carries no item number is an
-unnumbered decision item and reports.
+unnumbered item and reports.
 
 ### Basis
 
-Convention. The diagnostic claims a breach of the decision-item grammar.
+Convention. The diagnostic claims a breach of the item grammar.
 The sequence findings state mechanical facts about item order.
 
 ### Why it matters
 
-Decision IDs are citation targets. A number out of sequence makes a
-`D<k>` citation point at the wrong decision.
+Decision and ruling IDs are citation targets. A number out of sequence
+makes a `D<k>` or `R<k>` citation point at the wrong item.
 
 ### Example
 
     2. **D3 — scope.** The lint owns the check.
 
+    1. **R2 — keep the receipt.** The session words land with the claim.
+
 ### Instead
 
     2. **D2 — scope.** The lint owns the check.
 
+    1. **R1 — keep the receipt.** The session words land with the claim.
+
 ### Exceptions
 
-Blank lines never compare. On a legacy entry the unnumbered findings
+Blank lines never compare. Each section numbers on its own: item 1 restarts
+under `## Rulings`. On a legacy entry the unnumbered findings
 collapse into one note on the first item. A bold phrase in ordinary prose
 never reports; only a line that opens with one does.
 
 ### Inputs
 
-The lines from the `## Decisions` heading to the next `## ` heading.
+The lines of each `## Decisions` and `## Rulings` span, from its heading to
+the next `## ` heading.
 
 ### Configuration
 
@@ -366,7 +394,10 @@ descending line makes schema resolution untrustworthy for the whole tree.
 A missing or unreadable README reports once, at line 0. A file with no
 ledger line reports once. A line whose date fails to parse reports and
 stays out of the ascension chain. A ledger whose highest version exceeds
-`SCHEMA_MAX` stops the run before any check: one notice line, exit 2.
+`SCHEMA_MAX` stops the run before any check: one notice line, exit 2. The
+ledger's first adoption date is the legacy boundary: an entry dated before
+it is legacy, and every finding on a legacy entry is a note, never an
+error. J09 states the full class table.
 
 ### Inputs
 
@@ -421,6 +452,11 @@ header. A malformed line already carries its own finding. The position
 check still runs on it: a line that fails to parse also reports when it
 does not sit directly after the Date line.
 
+Legacy classes follow the table. An entry predating the ledger's first
+adoption date is legacy. Every finding on a legacy entry is a note, never
+an error. An entry resolving to a declared schema uses that schema's
+classes. No one rewrites a landed entry to satisfy a schema.
+
 ### Inputs
 
 The front matter of the entry, the position of the `Date:` line, and the
@@ -441,7 +477,8 @@ to an entry. A citation with no slug resolves only when the number names
 one entry: a number that two entries in one directory share is ambiguous
 and reports instead of resolving, while a slug that matches a claimant
 resolves to that claimant. `<area>/<NNN> D<k>`
-resolves to a decision defined in that entry. `<area>/<NNN> §<k>` resolves
+resolves to a decision defined in that entry. `<area>/<NNN> R<k>`
+resolves to a ruling defined in that entry. `<area>/<NNN> §<k>` resolves
 to the entry; the section number is never checked, because sections are
 named, not numbered. Citation areas are letter-led, so a count such as
 `31/37` never reads as a citation. An external citation
@@ -468,23 +505,25 @@ reader to nothing and hides the entry's basis.
 
 ### Exceptions
 
-Quote lines never report. Decision definitions inside the `## Decisions`
-section never report as citations. Text inside inline code spans never
+Quote lines never report. Decision and ruling definitions inside the
+`## Decisions` and `## Rulings` sections never report as citations. Text
+inside inline code spans never
 reports, and the span state carries across lines. A declared `Citations:`
 shape is recognized and never resolved. An external `ext:` citation never
 reports either: the external pattern claims its span ahead of the local
 grammar, so no tail of it resolves and its decoration never reads as a
 bare decision ID. A bare `D<k>` reports one note when
 the entry does not define that decision and the entry resolves to schema 4
-or higher; below schema 4 it reports nothing. A miss is an error at schema
+or higher; below schema 4 it reports nothing. A bare `R<k>` is unchecked:
+the ruling namespace has no bare-ID rule. A miss is an error at schema
 4 or higher and a note below. Each match resolves once; external citations
 and declared shapes claim their spans first.
 
 ### Inputs
 
-The body lines of the entry, external `ext:` citations included, the entry
-and decision indexes built from the `journals/` tree, the declared shapes
-from `journals/README.md`, and the entry's resolved schema.
+The body lines of the entry, external `ext:` citations included, the entry,
+decision, and ruling indexes built from the `journals/` tree, the declared
+shapes from `journals/README.md`, and the entry's resolved schema.
 
 ### Configuration
 

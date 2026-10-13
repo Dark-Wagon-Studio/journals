@@ -1,6 +1,6 @@
 ---
 name: journal-craft
-description: Write and check journal entries against schema 5 - the entry schema line, qualified decision IDs, status grammar, dependency and supersession edges, schema resolution, ruling receipts. Use when materializing a journal entry, editing one, checking entries with the lint, or citing a decision.
+description: Write and check journal entries against schema 6 - the entry schema line, qualified decision IDs, status grammar, dependency and supersession edges, schema resolution, ruling receipts. Use when materializing a journal entry, editing one, checking entries with the lint, or citing a decision.
 ---
 
 # journal-craft
@@ -10,7 +10,7 @@ skill writes entries that comply and checks entries that exist. The check is a
 lint. It reports claims that do not resolve. It never rewrites, scores, or
 gates.
 
-## Writing rules (schema 5)
+## Writing rules (schema 6)
 
 - Filename: `<NNN>-<slug>.md`. Numbering starts at `000` in each directory.
 - Front matter, in order:
@@ -65,6 +65,7 @@ entries are information, not work.
     Schema: 3. Adopted: 2026-09-24.
     Schema: 4. Adopted: 2026-09-25.
     Schema: 5. Adopted: 2026-09-27.
+    Schema: 6. Adopted: 2026-10-13.
 
 An entry resolves to a schema in three steps. First, its own `Schema:` line,
 when it carries one. Second, the ledger line with the latest adoption date on
